@@ -42,6 +42,31 @@ public class SpendRepositoryJdbc implements SpendRepository{
         return category;
     }
 
+    public CategoryEntity findCategoryByUsernameAndCategory(String categoryName, String username) {
+        CategoryEntity category = new CategoryEntity();
+        try (Connection connect = spendDataSource.getConnection(); PreparedStatement ps = connect.prepareStatement(
+                "SELECT * FROM category WHERE category = ? AND username = ?"
+        )) {
+            ps.setString(1, categoryName);
+            ps.setString(2, username);
+            ps.executeQuery();
+
+            try(ResultSet resultSet = ps.getResultSet()) {
+                if(resultSet.next()) {
+                    category.setId(UUID.fromString(resultSet.getString("id")));
+                    category.setCategory(resultSet.getString("category"));
+                    category.setUsername(resultSet.getString("username"));
+                } else
+                {
+                    throw new IllegalStateException();
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return category;
+    }
+
     @Override
     public CategoryEntity editCategory(CategoryEntity category) {
         try (Connection connect = spendDataSource.getConnection(); PreparedStatement ps = connect.prepareStatement(
@@ -72,15 +97,15 @@ public class SpendRepositoryJdbc implements SpendRepository{
     @Override
     public SpendEntity createSpend(SpendEntity spend) {
         try (Connection connect = spendDataSource.getConnection(); PreparedStatement ps = connect.prepareStatement(
-                "INSERT INTO spend (username, currency, spendDate, amount, description, category) VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO spend (username, currency, spend_date, amount, description, category_id) VALUES (?, ?, ?, ?, ?, ?)",
                 PreparedStatement.RETURN_GENERATED_KEYS
         )) {
             ps.setString(1, spend.getUsername());
-            ps.setObject(2, spend.getCurrency());
+            ps.setString(2, spend.getCurrency().toString());
             ps.setDate(3, (Date) spend.getSpendDate());
             ps.setDouble(4, spend.getAmount());
             ps.setString(5, spend.getDescription());
-            ps.setObject(6, spend.getCategory());
+            ps.setObject(6, spend.getCategory().getId());
             ps.executeUpdate();
 
             UUID generatedId = null;
@@ -102,7 +127,7 @@ public class SpendRepositoryJdbc implements SpendRepository{
     @Override
     public SpendEntity editSpend(SpendEntity spend) {
         try (Connection connect = spendDataSource.getConnection(); PreparedStatement ps = connect.prepareStatement(
-                "UPDATE spend SET username = ?, currency = ?, spendDate = ?, amount = ?, description = ?, category = ? WHERE id = ?"
+                "UPDATE spend SET username = ?, currency = ?, spend_date = ?, amount = ?, description = ?, category = ? WHERE id = ?"
         )) {
             ps.setString(1, spend.getUsername());
             ps.setObject(2, spend.getCurrency());

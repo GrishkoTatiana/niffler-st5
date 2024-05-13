@@ -13,6 +13,7 @@ public interface SpendRepository {
     }
 
     CategoryEntity createCategory(CategoryEntity category);
+    CategoryEntity findCategoryByUsernameAndCategory(String categoryName, String username);
     CategoryEntity editCategory(CategoryEntity category);
     void removeCategory(CategoryEntity category);
 
