@@ -81,6 +81,11 @@ public class UserRepositorySpringJdbc implements UserRepository {
     }
 
     @Override
+    public UserAuthEntity updateUserInAuth(UserAuthEntity user) {
+        return null;
+    }
+
+    @Override
     public UserEntity createUserInUserdata(UserEntity user) {
         KeyHolder kh = new GeneratedKeyHolder();
         userdataJdbcTemplate.update(con -> {
@@ -101,6 +106,11 @@ public class UserRepositorySpringJdbc implements UserRepository {
         );
         user.setId((UUID) kh.getKeys().get("id"));
         return user;
+    }
+
+    @Override
+    public UserEntity updateUserInUserdata(UserEntity user) {
+        return null;
     }
 
     @Override

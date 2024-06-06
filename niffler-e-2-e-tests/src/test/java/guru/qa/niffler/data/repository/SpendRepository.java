@@ -3,6 +3,8 @@ package guru.qa.niffler.data.repository;
 import guru.qa.niffler.data.entity.CategoryEntity;
 import guru.qa.niffler.data.entity.SpendEntity;
 
+import java.util.List;
+
 public interface SpendRepository {
 
     static SpendRepository getInstance() {
@@ -24,6 +26,8 @@ public interface SpendRepository {
     SpendEntity createSpend(SpendEntity spend);
 
     SpendEntity editSpend(SpendEntity spend);
+
+    List<SpendEntity> findAllByUsername(String username);
 
     void removeSpend(SpendEntity spend);
 
