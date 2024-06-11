@@ -5,6 +5,8 @@ import static com.codeborne.selenide.Selenide.$x;
 
 /**
  * Главная страница
+ *
+ * <br><img src="MainPage.png" width="834" height="515"/>
  */
 public class MainPage {
     /**

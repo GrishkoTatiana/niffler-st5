@@ -27,27 +27,28 @@ public class UserQueueExtension implements
         BeforeEachCallback,
         AfterEachCallback,
         ParameterResolver {
-
     public static final ExtensionContext.Namespace NAMESPACE
             = ExtensionContext.Namespace.create(UserQueueExtension.class);
 
     private static final Map<User.UserType, Queue<UserJson>> USERS_QUEUE = new ConcurrentHashMap<>();
 
     static {
+        //Отправлены приглашения User.UserType.WITH_INVITATION и User.UserType.WITH_FRIEND
         USERS_QUEUE.put(User.UserType.COMMON, new ConcurrentLinkedQueue<>(
                 List.of(
-                        simpleUser("dima", "12345"),
-                        simpleUser("rabbit", "12345")
+                        simpleUser("barsik", "12345")
                 ))
         );
+        //Приняты приглашения от User.UserType.COMMON
         USERS_QUEUE.put(User.UserType.WITH_FRIEND, new ConcurrentLinkedQueue<>(
                 List.of(
-                        simpleUser("duck", "12345")
+                        simpleUser("dima", "12345")
                 ))
         );
+        //Получены приглашения от User.UserType.COMMON
         USERS_QUEUE.put(User.UserType.WITH_INVITATION, new ConcurrentLinkedQueue<>(
                 List.of(
-                        simpleUser("barsik", "12345")
+                        simpleUser("rabbit", "12345")
                 ))
         );
     }
@@ -67,23 +68,18 @@ public class UserQueueExtension implements
         methods.add(testMethod);
         methods.addAll(beforeEachMethods);
 
-        // Общий список парамтеров, которые мы хотим обработать
+        // Общий список параметров, которые мы хотим обработать
         List<Parameter> parameters = methods.stream()
                 .flatMap(m -> Arrays.stream(m.getParameters()))
                 .filter(p -> p.isAnnotationPresent(User.class))
                 .toList();
 
-        // Объект, где хранятся тип пользователя и сам пользователь. Далее будет сохранен в store
-        Map<User.UserType, UserJson> users = new HashMap<>();
+        // Объект, где хранятся параметры и пользователи. Далее будет сохранен в store
+        Map<Parameter, UserJson> users = new HashMap<>();
 
         // Обрабатываем каждый из полученных параметров
         for (Parameter parameter : parameters) {
             User.UserType selector = parameter.getAnnotation(User.class).value();
-
-            // Данный тип пользователя обрабатывался ранее
-            if (users.containsKey(selector)) {
-                continue;
-            }
 
             UserJson userForTest = null;
 
@@ -96,7 +92,7 @@ public class UserQueueExtension implements
             }
 
             // Добавляем полученного из очереди пользователя в наш объект
-            users.put(selector, userForTest);
+            users.put(parameter, userForTest);
         }
 
         // Сохраняем данные о пользователях в store
@@ -106,10 +102,11 @@ public class UserQueueExtension implements
     @Override
     public void afterEach(ExtensionContext context) {
         // Получаем мапу из хранилища
-        Map<User.UserType, UserJson> users = context.getStore(NAMESPACE).get(context.getUniqueId(), Map.class);
-        for (Map.Entry<User.UserType, UserJson> user : users.entrySet()) {
-            // Возвращаем обратно пользователя в соотвествующую очередь
-            USERS_QUEUE.get(user.getKey()).add(user.getValue());
+        Map<Parameter, UserJson> users = context.getStore(NAMESPACE).get(context.getUniqueId(), Map.class);
+        for (Map.Entry<Parameter, UserJson> user : users.entrySet()) {
+            // Возвращаем обратно пользователя в соответствующую очередь
+            User.UserType userType = user.getKey().getAnnotation(User.class).value();
+            USERS_QUEUE.get(userType).add(user.getValue());
         }
     }
 
@@ -121,67 +118,7 @@ public class UserQueueExtension implements
 
     @Override
     public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext) {
-        User.UserType userType = parameterContext.getParameter().getAnnotation(User.class).value();
-        return extensionContext.getStore(NAMESPACE).get(extensionContext.getUniqueId(), Map.class).get(userType);
+        Parameter parameter = parameterContext.getParameter();
+        return extensionContext.getStore(NAMESPACE).get(extensionContext.getUniqueId(), Map.class).get(parameter);
     }
-//
-////    private static final Queue<UserJson> USERS = new ConcurrentLinkedQueue<>();
-////    private static final Queue<UserJson> USERS_F = new ConcurrentLinkedQueue<>();
-////    private static final Queue<UserJson> USERS_I = new ConcurrentLinkedQueue<>();
-////
-////    static {
-////        USERS.add(simpleUser("dima", "12345"));
-////        USERS_F.add(simpleUser("duck", "12345"));
-////        USERS_I.add(simpleUser("barsik", "12345"));
-////    }
-//
-//
-//    @Override
-//    public void beforeEach(ExtensionContext context) throws Exception {
-//
-//        List<Method> methods = Arrays.stream(
-//                context.getRequiredTestClass().getDeclaredMethods()
-//        ).filter(i -> i.isAnnotationPresent(User.class)).toList();
-//
-//        List<User.UserType> desiredUsersForTest = Arrays.stream(context.getRequiredTestMethod().getParameters())
-//                .filter(p -> AnnotationSupport.isAnnotated(p, User.class))
-//                .map(p -> p.getAnnotation(User.class).value())
-//                .toList();
-//
-//        Map<User.UserType, UserJson> users = new HashMap<>();
-//        for (User.UserType userType : desiredUsersForTest) {
-//            UserJson userForTest = null;
-//            Queue<UserJson> queueForTest = USERS_QUEUE.get(userType);
-//            while (userForTest == null) {
-//                userForTest = queueForTest.poll();
-//            }
-//            users.put(userType, userForTest);
-//        }
-//
-//        Allure.getLifecycle().updateTestCase(testCase -> {
-//            testCase.setStart(new Date().getTime());
-//        });
-//        context.getStore(NAMESPACE).put(context.getUniqueId(), user);
-//    }
-//
-//    @Override
-//    public void afterEach(ExtensionContext context) throws Exception {
-//        UserJson userFromTest = context.getStore(NAMESPACE).get(context.getUniqueId(), UserJson.class);
-//        USERS.add(userFromTest);
-//    }
-//
-//
-//    @Override
-//    public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
-//        return parameterContext
-//                .getParameter()
-//                .getType()
-//                .isAssignableFrom(UserJson.class);
-//    }
-//
-//    @Override
-//    public UserJson resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
-//        return extensionContext.getStore(NAMESPACE)
-//                .get(extensionContext.getUniqueId(), UserJson.class);
-//    }
 }
