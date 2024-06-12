@@ -1,7 +1,6 @@
 package guru.qa.niffler.jupiter.extension;
 
-import guru.qa.niffler.jupiter.annotation.Category;
-import guru.qa.niffler.model.CategoryJson;
+import guru.qa.niffler.jupiter.annotation.TestUser;
 import guru.qa.niffler.model.UserJson;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -15,27 +14,13 @@ public abstract class CreateUserExtension implements BeforeEachCallback, Paramet
             = ExtensionContext.Namespace.create(CreateUserExtension.class);
 
 
-
     @Override
-    public void beforeEach(ExtensionContext extensionContext) throws Exception {
-        AnnotationSupport.findAnnotation(
-                extensionContext.getRequiredTestMethod(),
-                User.class
-        ).ifPresent(cat -> {
-                    CategoryJson categoryJson = new CategoryJson(
-                            null,
-                            cat.category(),
-                            cat.username()
-                    );
-                    extensionContext
-                            .getStore(NAMESPACE)
-                            .put(extensionContext.getUniqueId(), createCategory(categoryJson));
-                }
-        createUser();
+    public void beforeEach(ExtensionContext extensionContext) {
+        AnnotationSupport.findAnnotation(extensionContext.getRequiredTestMethod(), TestUser.class)
+                .ifPresent(testUser -> extensionContext.getStore(NAMESPACE).put(extensionContext.getUniqueId(), createUser(UserJson.randomUser())));
     }
 
-    private UserJson createUser(UserJson user) {
-    }
+    protected abstract UserJson createUser(UserJson user);
 
     @Override
     public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
