@@ -15,23 +15,23 @@ public class ButtonPanelPage {
     /**
      * Кнопка MAIN PAGE
      */
-    private SelenideElement mainPageButton = $x("//li[@data-tooltip-content=\"Main page\"]/a");
+    private final SelenideElement mainPageButton = $x("//li[@data-tooltip-content=\"Main page\"]/a");
     /**
      * Кнопка FRIENDS
      */
-    private SelenideElement friendsButton = $x("//li[@data-tooltip-content=data-tooltip-content=\"Friends\"]/a");
+    private final SelenideElement friendsButton = $x("//li[@data-tooltip-content=data-tooltip-content=\"Friends\"]/a");
     /**
      * Кнопка ALL PEOPLE
      */
-    private SelenideElement allPeopleButton = $x("//li[@data-tooltip-content=\"All people\"]/a");
+    private final SelenideElement allPeopleButton = $x("//li[@data-tooltip-content=\"All people\"]/a");
     /**
      * Кнопка PROFILE
      */
-    private SelenideElement profileButton = $x("//li[@data-tooltip-content=\"Profile\"]/a");
+    private final SelenideElement profileButton = $x("//li[@data-tooltip-content=\"Profile\"]/a");
     /**
      * Кнопка LOGOUT
      */
-    private SelenideElement logoutButton = $x("//li[@data-tooltip-content=\"Profile\"]/a");
+    private final SelenideElement logoutButton = $x("//li[@data-tooltip-content=\"Profile\"]/a");
 
     @Step("Кликнуть по кнопке MAIN PAGE для перехода на страницу MAIN")
     public MainPage clickMainPageButton() {

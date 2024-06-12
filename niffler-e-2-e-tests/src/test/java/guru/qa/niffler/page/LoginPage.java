@@ -15,15 +15,15 @@ public class LoginPage {
     /**
      * Поле Username
      */
-    private SelenideElement usernameInput = $x("//input[@placeholder='Type your username']");
+    private final SelenideElement usernameInput = $x("//input[@placeholder='Type your username']");
     /**
      * Поле Password
      */
-    private SelenideElement passwordInput = $x("//input[@placeholder='Type your password']");
+    private final SelenideElement passwordInput = $x("//input[@placeholder='Type your password']");
     /**
      * Кнопка LOGIN
      */
-    private SelenideElement loginButton = $x("//button[normalize-space(text())='Sign In']");
+    private final SelenideElement loginButton = $x("//button[normalize-space(text())='Sign In']");
 
     @Step("В поле Username ввести текст: '{username}'")
     public void setUsername(String username) {
