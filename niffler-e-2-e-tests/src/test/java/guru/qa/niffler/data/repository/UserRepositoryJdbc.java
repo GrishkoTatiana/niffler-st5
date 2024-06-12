@@ -2,6 +2,8 @@ package guru.qa.niffler.data.repository;
 
 import guru.qa.niffler.data.DataBase;
 import guru.qa.niffler.data.entity.Authority;
+import guru.qa.niffler.data.entity.AuthorityEntity;
+import guru.qa.niffler.data.entity.CurrencyValues;
 import guru.qa.niffler.data.entity.UserAuthEntity;
 import guru.qa.niffler.data.entity.UserEntity;
 import guru.qa.niffler.data.jdbc.DataSourceProvider;
@@ -77,6 +79,53 @@ public class UserRepositoryJdbc implements UserRepository {
     }
 
     @Override
+    public UserAuthEntity updateUserInAuth(UserAuthEntity user) {
+        try (Connection conn = authDataSource.getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement userPs = conn.prepareStatement(
+                    "UPDATE \"user\" SET " +
+                            "username = ?, password = ?, enabled = ?, account_non_expired = ?, account_non_locked = ?, credentials_non_expired = ? " +
+                            "WHERE id = ?"
+            );
+                 PreparedStatement deleteAuthorityPs = conn.prepareStatement(
+                         "DELETE FROM \"authority\" WHERE user_id = ?"
+                 );
+                 PreparedStatement authorityPs = conn.prepareStatement(
+                         "INSERT INTO \"authority\" (user_id, authority) VALUES (?, ?)"
+                 )) {
+                userPs.setString(1, user.getUsername());
+                userPs.setString(2, pe.encode(user.getPassword()));
+                userPs.setBoolean(3, user.getEnabled());
+                userPs.setBoolean(4, user.getAccountNonExpired());
+                userPs.setBoolean(5, user.getAccountNonLocked());
+                userPs.setBoolean(6, user.getCredentialsNonExpired());
+                userPs.setObject(7, user.getId());
+                userPs.executeUpdate();
+
+                deleteAuthorityPs.setObject(1, user.getId());
+                deleteAuthorityPs.executeUpdate();
+
+                for (AuthorityEntity a : user.getAuthorities()) {
+                    authorityPs.setObject(1, user.getId());
+                    authorityPs.setString(2, a.getAuthority().name());
+                    authorityPs.addBatch();
+                }
+                authorityPs.executeBatch();
+
+                conn.commit();
+                return user;
+            } catch (SQLException e) {
+                conn.rollback();
+                throw new SQLException("Error occurred while updating user in auth", e);
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public UserEntity createUserInUserdata(UserEntity user) {
         try (Connection conn = udDataSource.getConnection();
              PreparedStatement userPs = conn.prepareStatement(
@@ -109,7 +158,53 @@ public class UserRepositoryJdbc implements UserRepository {
     }
 
     @Override
+    public UserEntity updateUserInUserdata(UserEntity user) {
+        try (Connection conn = udDataSource.getConnection();
+             PreparedStatement userPs = conn.prepareStatement(
+                     "UPDATE \"user\" SET" +
+                             " username = ?, currency = ?, firstname = ?, surname = ?, photo = ?, photo_small = ?" +
+                             " WHERE id = ?",
+                     PreparedStatement.RETURN_GENERATED_KEYS
+             )) {
+            userPs.setString(1, user.getUsername());
+            userPs.setString(2, user.getCurrency().name());
+            userPs.setString(3, user.getFirstname());
+            userPs.setString(4, user.getSurname());
+            userPs.setObject(5, user.getPhoto());
+            userPs.setObject(6, user.getPhotoSmall());
+            userPs.setObject(7, user.getId());
+            userPs.executeUpdate();
+            return user;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public Optional<UserEntity> findUserInUserdataById(UUID id) {
-        return Optional.empty();
+        try (Connection conn = udDataSource.getConnection();
+             PreparedStatement userPs = conn.prepareStatement(
+                     "SELECT * FROM \"user\" WHERE id = ?"
+             )) {
+            userPs.setObject(1, id);
+            userPs.executeUpdate();
+            UserEntity userEntity = new UserEntity();
+            try (ResultSet resultSet = userPs.getResultSet()) {
+                if (resultSet.next()) {
+                    userEntity.setId(UUID.fromString(resultSet.getString("id")));
+                    userEntity.setUsername(resultSet.getString("username"));
+                    userEntity.setCurrency((CurrencyValues) resultSet.getObject("currency"));
+                    userEntity.setFirstname(resultSet.getString("firstname"));
+                    userEntity.setSurname(resultSet.getString("surname"));
+                    userEntity.setPhoto(resultSet.getBytes("photo"));
+                    userEntity.setPhotoSmall(resultSet.getBytes("photo_small"));
+                } else {
+                    return Optional.empty();
+                }
+            }
+            return Optional.of(userEntity);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

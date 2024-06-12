@@ -4,6 +4,7 @@ import guru.qa.niffler.data.DataBase;
 import guru.qa.niffler.data.entity.CategoryEntity;
 import guru.qa.niffler.data.entity.SpendEntity;
 import guru.qa.niffler.data.jdbc.DataSourceProvider;
+import guru.qa.niffler.model.CurrencyValues;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -11,6 +12,8 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class SpendRepositoryJdbc implements SpendRepository {
@@ -122,6 +125,34 @@ public class SpendRepositoryJdbc implements SpendRepository {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public List<SpendEntity> findAllByUsername(String username) {
+        List<SpendEntity> spendEntityList = new ArrayList<>();
+        try (Connection conn = spendDataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(
+                     "SELECT * FROM spend" +
+                             " WHERE username = ?")) {
+            ps.setString(1, username);
+            ps.executeQuery();
+            try (ResultSet resultSet = ps.getResultSet()) {
+                while(resultSet.next()) {
+                    SpendEntity spendEntity = new SpendEntity();
+                    spendEntity.setId((UUID) resultSet.getObject("id"));
+                    spendEntity.setUsername(resultSet.getString("username"));
+                    spendEntity.setCurrency((CurrencyValues) resultSet.getObject("currency"));
+                    spendEntity.setSpendDate(resultSet.getDate("spend_date"));
+                    spendEntity.setAmount(resultSet.getDouble("amount"));
+                    spendEntity.setDescription(resultSet.getString("description"));
+                    spendEntity.setCategoryId((UUID) resultSet.getObject("category_id"));
+                    spendEntityList.add(spendEntity);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return spendEntityList;
     }
 
     @Override
